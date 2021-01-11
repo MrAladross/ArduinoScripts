@@ -1,0 +1,72 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+
+//wifi information if using home network instead of as access point
+const char* ssid     = "networkName";
+const char* password = "networkPassword";
+
+//port is the parameter
+WiFiServer server(12345);
+
+String rcv = "";
+
+void setup() {
+  //pins to control on the board. complete circuit with G ground pin.
+  pinMode(D8,OUTPUT);
+pinMode(D7,OUTPUT);
+
+  Serial.begin(9600);
+  WiFi.begin(ssid, password);
+  //connect to home network
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+  //get IP. Consider setting to static.
+  Serial.println("WiFi connected.");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+  server.begin();
+  Serial.println("started server");
+}
+void LEDON(){
+ digitalWrite(D8,HIGH);
+digitalWrite(D7,HIGH);
+}
+void LEDOFF(){
+  digitalWrite(D8,LOW);
+digitalWrite(D7,LOW);
+}
+
+void loop(){
+  
+ WiFiClient client = server.available();
+  rcv = "";
+  if (client) {
+    if(client.connected())
+    {
+      Serial.println("Client Connected");
+      //delay necessary so client has time to send a message through tcp
+      delay(100);
+    }
+    while(client.connected()){      
+      while(client.available()>0){
+        // read tcp message from the connected client
+        rcv+=client.read(); 
+      }
+      Serial.println(rcv);
+      //message received as bytes, so compare using ascii values for the string
+      if(rcv=="108101100111110")//ledon
+      LEDON();
+      if(rcv == "108101100111102102")//ledoff
+      LEDOFF();
+      //send tcp message as bytes
+        client.print("You have been disconnected");
+        //not sure if flush is needed, but it works
+        client.flush();
+        //immediately disconnect client once led toggle is complete
+    client.stop();
+    Serial.println("Client disconnected");   
+    }
+  }
+ 
+}

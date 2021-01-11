@@ -1,0 +1,53 @@
+using UnityEngine;
+using UnityEngine.UI;
+using System;
+using System.Net.Sockets;
+using System.Text;
+using System.IO;
+public class TurnOnLights : MonoBehaviour
+{
+    public Text statusText;
+    bool ledstatus = false;
+
+    public void ToggleLED()
+    {
+        try
+        {
+            string messageToSend = "";
+            //input the ip address assigned to the wifi module. An example format can be seen below
+            TcpClient client = new TcpClient("192.168.1.255", 12345);
+            if (!ledstatus)
+            {
+                ledstatus = true;
+                statusText.text = "LED OFF";
+                messageToSend = "ledon";
+            }
+            else
+            {
+                ledstatus = false;
+                statusText.text = "LED ON";
+                messageToSend = "ledoff";
+            }
+            int byteCount = Encoding.ASCII.GetByteCount(messageToSend + 1);
+            byte[] sendData = Encoding.ASCII.GetBytes(messageToSend);
+
+            NetworkStream stream = client.GetStream();
+            stream.Write(sendData, 0, sendData.Length);
+            Debug.Log("sending data to server...");
+
+            StreamReader sr = new StreamReader(stream);
+            string response = sr.ReadLine();
+
+            Debug.Log(response);
+            stream.Close();
+            client.Close();
+
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
+            Debug.Log("failed to connect...");
+            //   goto connection;
+        }
+    }
+}
